@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23f6f2e9'/%3E%3Cpath d='M10 34 L24 26 L36 39 L54 16' fill='none' stroke='%23b88725' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M10 34 L54 34' stroke='%2324211c' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<title>人生财富曲线图</title>
+<style>
+  :root{
+    --bg:#f6f2e9;
+    --paper:#fffdf8;
+    --ink:#24211c;
+    --muted:#756f63;
+    --line:#ded6c8;
+    --positive:#b88725;
+    --positive-soft:#f4dfaa;
+    --negative:#b8493d;
+    --negative-soft:#efb8b1;
+    --accent:#1f5f5b;
+    --accent-dark:#143f3c;
+    --shadow:0 18px 45px rgba(54,45,31,.12);
+    --radius:22px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 12% 8%,rgba(184,135,37,.12),transparent 30%),
+      radial-gradient(circle at 92% 0%,rgba(31,95,91,.12),transparent 34%),
+      var(--bg);
+    min-height:100vh;
+  }
+  .app{max-width:1280px;margin:0 auto;padding:28px 22px 36px}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:22px}
+  .eyebrow{font-size:13px;letter-spacing:.18em;color:var(--accent);font-weight:700;margin-bottom:8px}
+  h1{font-size:clamp(28px,4vw,46px);line-height:1.08;margin:0;letter-spacing:-.04em}
+  .header-note{max-width:390px;color:var(--muted);font-size:14px;line-height:1.7;margin:0;text-align:right}
+  .layout{display:grid;grid-template-columns:minmax(320px,390px) 1fr;gap:20px;align-items:start}
+  .panel{background:var(--paper);border:1px solid rgba(36,33,28,.09);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .controls{padding:20px;position:sticky;top:18px}
+  .panel h2{font-size:18px;margin:0 0 16px;letter-spacing:-.02em}
+  label{display:block;font-size:13px;font-weight:700;color:#4b463d;margin:14px 0 7px}
+  input{width:100%;height:46px;border:1px solid var(--line);border-radius:13px;padding:0 13px;font-size:16px;background:#fff;color:var(--ink);outline:none;transition:border-color .18s,box-shadow .18s}
+  input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(31,95,91,.11)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .hint{font-size:12px;color:var(--muted);line-height:1.55;margin-top:6px}
+  .btn{border:0;border-radius:13px;min-height:44px;padding:0 15px;font-size:14px;font-weight:700;cursor:pointer;transition:transform .12s,opacity .12s,background .12s}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--accent);color:#fff;width:100%;margin-top:17px}
+  .btn-primary:hover{background:var(--accent-dark)}
+  .btn-ghost{background:#eee8dc;color:var(--ink)}
+  .btn-ghost:hover{background:#e4dccb}
+  .btn-danger{background:#f5e4e1;color:#9d342b}
+  .btn-danger:hover{background:#efd4d0}
+  .quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .chart-card{padding:18px;min-width:0}
+  .chart-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:4px 6px 14px}
+  .chart-title{font-size:19px;font-weight:800;margin:0 0 4px}
+  .chart-sub{font-size:13px;color:var(--muted);margin:0}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;font-size:12px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .dot.gold{background:var(--positive)}
+  .dot.red{background:var(--negative)}
+  .dot.zero{background:var(--ink);height:3px;border-radius:3px;width:14px}
+  .chart-wrap{width:100%;overflow:hidden;border-radius:18px;background:linear-gradient(180deg,#fffefb,#fbf7ee);border:1px solid #ebe4d6}
+  svg{display:block;width:100%;height:auto;min-height:390px}
+  .axis{stroke:#cfc7b8;stroke-width:1}
+  .grid{stroke:#e7e0d4;stroke-width:1}
+  .zero-line{stroke:var(--ink);stroke-width:2.2}
+  .axis-text{fill:#716b60;font-size:12px}
+  .zero-text{fill:var(--ink);font-size:12px;font-weight:800}
+  .curve{fill:none;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+  .curve.positive{stroke:var(--positive)}
+  .curve.negative{stroke:var(--negative)}
+  .point{cursor:pointer;stroke:#fff;stroke-width:2.5}
+  .point.positive{fill:var(--positive)}
+  .point.negative{fill:var(--negative)}
+  .point.zero{fill:var(--ink)}
+  .point-label{font-size:12px;font-weight:800;paint-order:stroke;stroke:#fffdf8;stroke-width:4px;stroke-linejoin:round}
+  .point-label.positive{fill:var(--positive)}
+  .point-label.negative{fill:var(--negative)}
+  .tooltip{position:fixed;pointer-events:none;opacity:0;transform:translate(-50%,-115%);background:#24211c;color:#fff;padding:10px 12px;border-radius:11px;font-size:13px;line-height:1.5;box-shadow:0 12px 30px rgba(0,0,0,.22);white-space:nowrap;z-index:10;transition:opacity .12s}
+  .tooltip b{font-size:15px}
+  .tooltip::after{content:"";position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border:6px solid transparent;border-top-color:#24211c;border-bottom:0}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  .stat{background:#f7f1e5;border:1px solid #ebe3d4;border-radius:15px;padding:13px}
+  .stat .label{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .stat .value{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .records{margin-top:20px}
+  .record-list{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px;max-height:285px;overflow:auto;padding-right:3px}
+  .record{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;padding:10px;border:1px solid #e7e0d3;border-radius:14px;background:#fff}
+  .record.positive{border-left:4px solid var(--positive)}
+  .record.negative{border-left:4px solid var(--negative)}
+  .record.zero{border-left:4px solid var(--ink)}
+  .age-badge{height:38px;border-radius:11px;background:#f0eadf;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+  .record-main{min-width:0}
+  .money{font-weight:800;font-size:15px}
+  .event{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .record-actions{display:flex;gap:6px}
+  .icon-btn{width:36px;height:36px;border:1px solid #ded6c8;border-radius:10px;background:#fff;cursor:pointer;font-weight:800}
+  .icon-btn:hover{background:#f2ece1}
+  .icon-btn.delete{color:#9d342b}
+  .empty{text-align:center;padding:32px 16px;color:var(--muted);font-size:14px;border:1px dashed var(--line);border-radius:15px;background:#fff}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;background:#24211c;color:#fff;padding:11px 16px;border-radius:999px;font-size:14px;transition:.2s;z-index:20;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .editing-tip{display:none;background:#e8f1ef;border:1px solid #bdd7d3;color:#1f5f5b;border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+  .editing-tip.show{display:block}
+  @media (max-width:860px){
+    .app{padding:18px 13px 28px}
+    header{display:block}
+    .header-note{text-align:left;margin-top:10px}
+    .layout{grid-template-columns:1fr}
+    .controls{position:static}
+    svg{min-height:330px}
+    .chart-top{display:block}
+    .legend{justify-content:flex-start;margin-top:10px}
+    .stats{grid-template-columns:1fr}
+    .form-row{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <div class="eyebrow">LIFE WEALTH MAP</div>
+      <h1>人生财富曲线图</h1>
+    </div>
+    <p class="header-note">记录每个年龄的财富节点。0 元是基准线，向上代表资产，向下代表负债。</p>
+  </header>
+
+  <main class="layout">
+    <section class="panel controls">
+      <h2 id="formTitle">添加年龄节点</h2>
+      <div class="editing-tip" id="editingTip">正在修改该年龄节点，保存后图表会同步更新。</div>
+      <form id="nodeForm">
+        <div class="form-row">
+          <div>
+            <label for="ageInput">年龄</label>
+            <input id="ageInput" type="number" min="0" max="120" step="1" placeholder="例如 26" required>
+          </div>
+          <div>
+            <label for="wealthInput">财富金额（元）</label>
+            <input id="wealthInput" type="number" step="1" placeholder="例如 -80000" required>
+          </div>
+        </div>
+        <label for="eventInput">事件备注（可选）</label>
+        <input id="eventInput" type="text" maxlength="30" placeholder="例如：打工、创业、被诈骗">
+        <div class="hint">可以输入负数，例如 <b>-80000</b> 表示负债 8 万元。</div>
+        <button class="btn btn-primary" type="submit" id="saveBtn">添加节点</button>
+      </form>
+      <div class="quick-actions">
+        <button class="btn btn-ghost" type="button" id="sampleBtn">载入示例</button>
+        <button class="btn btn-danger" type="button" id="clearBtn">清空数据</button>
+      </div>
+
+      <div class="records">
+        <h2>财富节点</h2>
+        <ul class="record-list" id="recordList"></ul>
+      </div>
+    </section>
+
+    <section class="panel chart-card">
+      <div class="chart-top">
+        <div>
+          <p class="chart-title">随年龄变化的财富轨迹</p>
+          <p class="chart-sub">点击或悬停曲线上的圆点，可查看具体年龄和财富。</p>
+        </div>
+        <div class="legend">
+          <span><i class="dot gold"></i>正资产</span>
+          <span><i class="dot red"></i>负债</span>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <svg id="chart" viewBox="0 0 860 500" role="img" aria-label="人生财富曲线图"></svg>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="label">最高财富</div><div class="value" id="peakValue">—</div></div>
+        <div class="stat"><div class="label">最低财富</div><div class="value" id="troughValue">—</div></div>
+        <div class="stat"><div class="label">最新节点</div><div class="value" id="latestValue">—</div></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="tooltip" id="tooltip"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'life-wealth-chart-v1';
+  const sampleData = [
+    {age:16, wealth:2000, event:'打工'},
+    {age:20, wealth:40000, event:'打工'},
+    {age:22, wealth:100000, event:'创业'},
+    {age:25, wealth:1000000, event:'创业'},
+    {age:26, wealth:-80000, event:'被诈骗'},
+    {age:30, wealth:-20000, event:'重新开始'}
+  ];
+
+  let nodes = loadData();
+  let editingAge = null;
+
+  const $ = id => document.getElementById(id);
+  const form = $('nodeForm'), ageInput=$('ageInput'), wealthInput=$('wealthInput'), eventInput=$('eventInput');
+  const recordList=$('recordList'), tooltip=$('tooltip'), toast=$('toast');
+
+  function loadData(){
+    try{
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      return Array.isArray(saved) && saved.length ? saved : sampleData.slice();
+    }catch(e){ return sampleData.slice(); }
+  }
+  function saveData(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(nodes)); }
+  function sortedNodes(){ return nodes.slice().sort((a,b)=>a.age-b.age); }
+  function moneyClass(v){ return v > 0 ? 'positive' : v < 0 ? 'negative' : 'zero'; }
+  function formatMoney(v){
+    const abs = Math.abs(v);
+    let text;
+    if(abs >= 100000000) text = (abs/100000000).toFixed(2).replace(/\.00$/,'').replace(/(\.\d)0$/,'$1') + ' 亿元';
+    else if(abs >= 10000) text = (abs/10000).toFixed(2).replace(/\.00$/,'').replace(/(\.\d)0$/,'$1') + ' 万元';
+    else text = Math.round(abs).toLocaleString('zh-CN') + ' 元';
+    return (v < 0 ? '-' : '') + text;
+  }
+  function escapeHtml(str){
+    return String(str || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  }
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(()=>toast.classList.remove('show'), 1800);
+  }
+
+  form.addEventListener('submit', e=>{
+    e.preventDefault();
+    const age = parseInt(ageInput.value,10);
+    const wealth = Math.round(Number(wealthInput.value));
+    const event = eventInput.value.trim();
+    if(!Number.isFinite(age) || age < 0 || age > 120){ showToast('请输入 0—120 岁之间的年龄'); return; }
+    if(!Number.isFinite(wealth)){ showToast('请输入有效的财富金额'); return; }
+
+    if(editingAge !== null){
+      const item = nodes.find(n=>n.age===editingAge);
+      if(item){
+        if(age !== editingAge){
+          const conflict = nodes.find(n=>n!==item && n.age===age);
+          if(conflict){
+            if(!confirm(age + ' 岁已经存在，是否覆盖原来的财富数据？')) return;
+            nodes = nodes.filter(n=>n!==conflict);
+          }
+        }
+        item.age = age;
+        item.wealth = wealth;
+        item.event = event;
+      }
+      cancelEdit();
+      showToast('节点已更新');
+    }else{
+      const existing = nodes.find(n=>n.age===age);
+      if(existing){
+        if(!confirm(age + ' 岁已经存在，是否覆盖原来的财富数据？')) return;
+        existing.wealth = wealth; existing.event = event;
+      }else{
+        nodes.push({age,wealth,event});
+      }
+      form.reset();
+      showToast('节点已添加');
+    }
+    saveData(); render();
+  });
+
+  $('sampleBtn').addEventListener('click', ()=>{
+    nodes = sampleData.slice();
+    cancelEdit(); saveData(); render(); showToast('已载入示例数据');
+  });
+  $('clearBtn').addEventListener('click', ()=>{
+    if(confirm('确定清空所有年龄节点吗？')){
+      nodes=[]; cancelEdit(); saveData(); render(); showToast('数据已清空');
+    }
+  });
+
+  function startEdit(age){
+    const item = nodes.find(n=>n.age===age);
+    if(!item) return;
+    editingAge = age;
+    ageInput.value = item.age;
+    wealthInput.value = item.wealth;
+    eventInput.value = item.event || '';
+    $('formTitle').textContent = '编辑年龄节点';
+    $('saveBtn').textContent = '保存修改';
+    $('editingTip').classList.add('show');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function cancelEdit(){
+    editingAge = null;
+    ageInput.disabled = false;
+    $('formTitle').textContent = '添加年龄节点';
+    $('saveBtn').textContent = '添加节点';
+    $('editingTip').classList.remove('show');
+    form.reset();
+  }
+  function removeNode(age){
+    const item = nodes.find(n=>n.age===age);
+    if(!item) return;
+    if(confirm('确定删除 ' + age + ' 岁这个节点吗？')){
+      nodes = nodes.filter(n=>n.age!==age);
+      if(editingAge===age) cancelEdit();
+      saveData(); render(); showToast('节点已删除');
+    }
+  }
+
+  function renderRecords(){
+    const data = sortedNodes().slice().reverse();
+    if(!data.length){
+      recordList.innerHTML = '<div class="empty">还没有数据。先添加一个年龄节点，或载入示例。</div>';
+      return;
+    }
+    recordList.innerHTML = data.map(n=>{
+      const cls = moneyClass(n.wealth);
+      return '<li class="record '+cls+'">'
+        + '<div class="age-badge">'+n.age+'岁</div>'
+        + '<div class="record-main"><div class="money">'+formatMoney(n.wealth)+'</div>'
+        + '<div class="event">'+escapeHtml(n.event || '未填写事件')+'</div></div>'
+        + '<div class="record-actions"><button class="icon-btn" type="button" aria-label="编辑" onclick="window.__lifeChart.edit('+n.age+')">改</button>'
+        + '<button class="icon-btn delete" type="button" aria-label="删除" onclick="window.__lifeChart.remove('+n.age+')">删</button></div>'
+        + '</li>';
+    }).join('');
+  }
+
+  function renderStats(data){
+    if(!data.length){ $('peakValue').textContent='—'; $('troughValue').textContent='—'; $('latestValue').textContent='—'; return; }
+    const peak = data.reduce((a,b)=>b.wealth>a.wealth?b:a);
+    const trough = data.reduce((a,b)=>b.wealth<a.wealth?b:a);
+    const latest = data[data.length-1];
+    $('peakValue').textContent = peak.age + '岁 · ' + formatMoney(peak.wealth);
+    $('troughValue').textContent = trough.age + '岁 · ' + formatMoney(trough.wealth);
+    $('latestValue').textContent = latest.age + '岁 · ' + formatMoney(latest.wealth);
+  }
+
+  function renderChart(){
+    const svg = $('chart');
+    const data = sortedNodes();
+    if(!data.length){
+      svg.innerHTML = '<text x="430" y="250" text-anchor="middle" fill="#756f60" font-size="18">暂无数据，请先添加年龄节点</text>';
+      renderStats(data); return;
+    }
+
+    const W=860,H=500, m={t:38,r:42,b:58,l:92};
+    const cw=W-m.l-m.r, ch=H-m.t-m.b;
+    let minAge=Math.min(...data.map(d=>d.age)), maxAge=Math.max(...data.map(d=>d.age));
+    if(minAge===maxAge){ minAge=Math.max(0,minAge-5); maxAge=maxAge+5; }
+    let minV=Math.min(0,...data.map(d=>d.wealth));
+    let maxV=Math.max(0,...data.map(d=>d.wealth));
+    if(minV===maxV){ minV-=1; maxV+=1; }
+    const padV=(maxV-minV)*.12; minV-=padV; maxV+=padV;
+
+    const x = age => m.l + ((age-minAge)/(maxAge-minAge))*cw;
+    const y = v => m.t + (1-(v-minV)/(maxV-minV))*ch;
+    const zeroY = y(0);
+
+    let html='';
+    const ageTicks = buildTicks(minAge,maxAge,6);
+    const valueTicks = buildTicks(minV,maxV,5);
+
+    valueTicks.forEach(v=>{
+      const yy=y(v);
+      html += '<line class="grid" x1="'+m.l+'" y1="'+yy+'" x2="'+(W-m.r)+'" y2="'+yy+'"/>';
+      html += '<text class="axis-text" x="'+(m.l-10)+'" y="'+(yy+4)+'" text-anchor="end">'+shortAxisMoney(v)+'</text>';
+    });
+    ageTicks.forEach(a=>{
+      if(a<minAge||a>maxAge) return;
+      const xx=x(a);
+      html += '<line class="grid" x1="'+xx+'" y1="'+m.t+'" x2="'+xx+'" y2="'+(H-m.b)+'" opacity=".45"/>';
+      html += '<text class="axis-text" x="'+xx+'" y="'+(H-m.b+28)+'" text-anchor="middle">'+a+'岁</text>';
+    });
+
+    html += '<line class="axis" x1="'+m.l+'" y1="'+(H-m.b)+'" x2="'+(W-m.r)+'" y2="'+(H-m.b)+'"/>';
+    html += '<line class="axis" x1="'+m.l+'" y1="'+m.t+'" x2="'+m.l+'" y2="'+(H-m.b)+'"/>';
+    html += '<line class="zero-line" x1="'+m.l+'" y1="'+zeroY+'" x2="'+(W-m.r)+'" y2="'+zeroY+'"/>';
+
+    const points = data.map(d=>({x:x(d.age),y:y(d.wealth),d}));
+    const linePath = points.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');
+    const areaPath = linePath + ' L '+points[points.length-1].x.toFixed(1)+' '+zeroY.toFixed(1)+' L '+points[0].x.toFixed(1)+' '+zeroY.toFixed(1)+' Z';
+    const allPositive = data.every(d=>d.wealth>=0);
+    const allNegative = data.every(d=>d.wealth<=0);
+    const areaColor = allPositive ? 'rgba(184,135,37,.13)' : allNegative ? 'rgba(184,73,61,.12)' : 'rgba(31,95,91,.08)';
+    html += '<path d="'+areaPath+'" fill="'+areaColor+'"/>';
+
+    for(let i=0;i<points.length-1;i++){
+      const p1=points[i],p2=points[i+1];
+      if(p1.d.wealth===0 || p2.d.wealth===0 || Math.sign(p1.d.wealth)===Math.sign(p2.d.wealth)){
+        const cls = p1.d.wealth>0 && p2.d.wealth>0 ? 'positive' : p1.d.wealth<0 && p2.d.wealth<0 ? 'negative' : '';
+        html += '<line class="curve '+cls+'" x1="'+p1.x+'" y1="'+p1.y+'" x2="'+p2.x+'" y2="'+p2.y+'" stroke="'+(cls?'':'#1f5f5b')+'"/>';
+      }else{
+        const crossX = p1.x + (0-p1.d.wealth)*(p2.x-p1.x)/(p2.d.wealth-p1.d.wealth);
+        html += '<line class="curve '+(p1.d.wealth>0?'positive':'negative')+'" x1="'+p1.x+'" y1="'+p1.y+'" x2="'+crossX+'" y2="'+zeroY+'"/>';
+        html += '<line class="curve '+(p2.d.wealth>0?'positive':'negative')+'" x1="'+crossX+'" y1="'+zeroY+'" x2="'+p2.x+'" y2="'+p2.y+'"/>';
+      }
+    }
+
+    points.forEach((p,i)=>{
+      const cls=moneyClass(p.d.wealth);
+      const labelY = p.d.wealth >= 0 ? p.y-14 : p.y+25;
+      html += '<circle class="point '+cls+'" cx="'+p.x+'" cy="'+p.y+'" r="6.5" data-index="'+i+'"/>';
+      html += '<text class="point-label '+cls+'" x="'+p.x+'" y="'+labelY+'" text-anchor="middle">'+shortMoneyLabel(p.d.wealth)+'</text>';
+    });
+
+    svg.innerHTML = html;
+    svg.querySelectorAll('.point').forEach(circle=>{
+      const idx=Number(circle.dataset.index);
+      const p=points[idx];
+      const show=()=>{
+        tooltip.innerHTML='<b>'+p.d.age+'岁</b><br>财富：'+formatMoney(p.d.wealth)+(p.d.event?'<br>事件：'+escapeHtml(p.d.event):'');
+        tooltip.style.opacity=1;
+        const rect=svg.getBoundingClientRect();
+        const scaleX=rect.width/W, scaleY=rect.height/H;
+        tooltip.style.left=(rect.left+p.x*scaleX)+'px';
+        tooltip.style.top=(rect.top+p.y*scaleY)+'px';
+      };
+      const hide=()=>{tooltip.style.opacity=0;};
+      circle.addEventListener('mouseenter',show);
+      circle.addEventListener('click',show);
+      circle.addEventListener('mouseleave',hide);
+      circle.addEventListener('blur',hide);
+      circle.setAttribute('tabindex','0');
+    });
+    renderStats(data);
+  }
+
+  function buildTicks(min,max,count){
+    const range=max-min;
+    const raw=range/count;
+    const mag=Math.pow(10,Math.floor(Math.log10(raw)));
+    const norm=raw/mag;
+    const step=(norm<1.5?1:norm<3?2:norm<7?5:10)*mag;
+    const start=Math.ceil(min/step)*step;
+    const ticks=[];
+    for(let v=start;v<=max+step*.001;v+=step) ticks.push(Number(v.toFixed(8)));
+    return ticks;
+  }
+  function shortAxisMoney(v){
+    if(v===0) return '0';
+    const abs=Math.abs(v);
+    if(abs>=100000000) return (v/100000000)+'亿';
+    if(abs>=10000) return (v/10000)+'万';
+    return String(v);
+  }
+  function shortMoneyLabel(v){
+    if(v===0) return '0元';
+    const abs=Math.abs(v);
+    const clean = num => Number(num.toFixed(2)).toLocaleString('zh-CN',{maximumFractionDigits:2});
+    if(abs>=100000000) return clean(v/100000000)+'亿元';
+    if(abs>=10000) return clean(v/10000)+'万元';
+    return clean(v)+'元';
+  }
+
+  window.__lifeChart = { edit:startEdit, remove:removeNode };
+  function render(){ renderRecords(); renderChart(); }
+  render();
+})();
+</script>
+</body>
+</html>
+<!-- （注：内容由AI生成） -->
